@@ -30,7 +30,7 @@ if SPOTIFY_CLIENT_ID == 'your_spotify_client_id_here' or SPOTIFY_CLIENT_SECRET =
     print("1. Create a .env file with:")
     print("   SPOTIPY_CLIENT_ID=your_actual_client_id")
     print("   SPOTIPY_CLIENT_SECRET=your_actual_client_secret")
-    print("   SPOTIPY_REDIRECT_URI=http://localhost:5000/callback")
+    print("   SPOTIPY_REDIRECT_URI=https://joiner.enpointe.io/callback")
     print("2. Or replace the placeholder values directly in this file")
     print("3. Or set environment variables before running the app")
 
@@ -123,7 +123,7 @@ def callback():
         if token_info:
             session['spotify_token'] = token_info['access_token']
             session['user_id'] = str(uuid.uuid4())
-            redirect_url = f'http://localhost:5000?token={token_info["access_token"]}'
+            redirect_url = f'https://joiner.enpointe.io?token={token_info["access_token"]}'
             print(f"Redirecting to: {redirect_url}")
             return redirect(redirect_url)
         else:

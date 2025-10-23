@@ -1,7 +1,7 @@
 // Spotify Collaborative Music App
 class SpotifyCollabApp {
     constructor() {
-        this.socket = io('http://localhost:5000');
+        this.socket = io('https://joiner.enpointe.io');
         this.spotifyToken = null;
         this.userId = null;
         this.currentRoom = null;
@@ -149,7 +149,7 @@ class SpotifyCollabApp {
 
     async loginToSpotify() {
         // Directly navigate to the login endpoint instead of using fetch
-        window.location.href = 'http://localhost:5000/login';
+        window.location.href = 'https://joiner.enpointe.io/login';
     }
 
     async createRoom() {
@@ -160,7 +160,7 @@ class SpotifyCollabApp {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/rooms', {
+            const response = await fetch('https://joiner.enpointe.io/api/rooms', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ class SpotifyCollabApp {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/rooms/${roomId}/join`, {
+            const response = await fetch(`https://joiner.enpointe.io/api/rooms/${roomId}/join`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -232,7 +232,7 @@ class SpotifyCollabApp {
         if (!this.currentRoom) return;
 
         try {
-            await fetch(`http://localhost:5000/api/rooms/${this.currentRoom.room_id}/leave`, {
+            await fetch(`https://joiner.enpointe.io/api/rooms/${this.currentRoom.room_id}/leave`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ class SpotifyCollabApp {
         if (!this.isHost || !this.currentRoom) return;
 
         try {
-            const response = await fetch(`http://localhost:5000/api/rooms/${this.currentRoom.room_id}/sync`, {
+            const response = await fetch(`https://joiner.enpointe.io/api/rooms/${this.currentRoom.room_id}/sync`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -279,7 +279,7 @@ class SpotifyCollabApp {
         }
 
         try {
-            await fetch(`http://localhost:5000/api/rooms/${this.currentRoom.room_id}/transfer-host`, {
+            await fetch(`https://joiner.enpointe.io/api/rooms/${this.currentRoom.room_id}/transfer-host`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -297,7 +297,7 @@ class SpotifyCollabApp {
         if (!this.currentRoom) return;
 
         try {
-            const response = await fetch(`http://localhost:5000/api/rooms/${this.currentRoom.room_id}/ready`, {
+            const response = await fetch(`https://joiner.enpointe.io/api/rooms/${this.currentRoom.room_id}/ready`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
