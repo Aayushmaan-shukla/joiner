@@ -16,7 +16,8 @@ load_dotenv()
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', 
+                   ping_timeout=60, ping_interval=25, max_http_buffer_size=1000000)
 
 # Spotify configuration
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID', '875cb1d855c64a6f90f3050f32ee8342')
@@ -360,11 +361,13 @@ def handle_disconnect():
 def handle_join_room(data):
     room_id = data['room_id']
     join_room(room_id)
+    print(f'Client joined room: {room_id}')
 
 @socketio.on('leave_room')
 def handle_leave_room(data):
     room_id = data['room_id']
     leave_room(room_id)
+    print(f'Client left room: {room_id}')
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

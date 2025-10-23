@@ -1,7 +1,18 @@
 // Spotify Collaborative Music App
 class SpotifyCollabApp {
     constructor() {
-        this.socket = io('https://joiner.enpointe.io');
+        this.socket = io('https://joiner.enpointe.io', {
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            rememberUpgrade: true,
+            timeout: 20000,
+            forceNew: false,
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            maxReconnectionAttempts: 5
+        });
         this.spotifyToken = null;
         this.userId = null;
         this.currentRoom = null;
@@ -91,6 +102,39 @@ class SpotifyCollabApp {
     setupSocketListeners() {
         this.socket.on('connect', () => {
             console.log('Connected to server');
+            this.showConnectionStatus('Connected to server', 'success');
+            // Rejoin room if we were in one
+            if (this.currentRoom) {
+                console.log('Rejoining room after reconnection');
+                this.socket.emit('join_room', { room_id: this.currentRoom.room_id });
+            }
+        });
+
+        this.socket.on('disconnect', (reason) => {
+            console.log('Disconnected from server:', reason);
+        });
+
+        this.socket.on('reconnect', (attemptNumber) => {
+            console.log('Reconnected to server after', attemptNumber, 'attempts');
+            this.showConnectionStatus('Reconnected to server', 'success');
+            // Rejoin room if we were in one
+            if (this.currentRoom) {
+                console.log('Rejoining room after reconnection');
+                this.socket.emit('join_room', { room_id: this.currentRoom.room_id });
+            }
+        });
+
+        this.socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log('Reconnection attempt', attemptNumber);
+        });
+
+        this.socket.on('reconnect_error', (error) => {
+            console.error('Reconnection error:', error);
+        });
+
+        this.socket.on('reconnect_failed', () => {
+            console.error('Failed to reconnect to server');
+            this.showConnectionStatus('Connection lost. Please refresh the page.', 'error');
         });
 
         this.socket.on('user_joined', (data) => {
@@ -542,6 +586,39 @@ class SpotifyCollabApp {
     generateUserId() {
         this.userId = 'user_' + Math.random().toString(36).substr(2, 9);
         return this.userId;
+    }
+
+    showConnectionStatus(message, type = 'info') {
+        // Create or update connection status indicator
+        let statusDiv = document.getElementById('connection-status');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'connection-status';
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                padding: 10px 15px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            document.body.appendChild(statusDiv);
+        }
+        
+        statusDiv.textContent = message;
+        statusDiv.style.backgroundColor = type === 'error' ? '#ff4444' : '#44aa44';
+        
+        // Auto-hide after 5 seconds for non-error messages
+        if (type !== 'error') {
+            setTimeout(() => {
+                if (statusDiv) {
+                    statusDiv.style.display = 'none';
+                }
+            }, 5000);
+        }
     }
 }
 
