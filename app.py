@@ -18,7 +18,8 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', 
                    ping_timeout=60, ping_interval=25, max_http_buffer_size=1000000,
-                   allow_upgrades=True, transports=['websocket', 'polling'])
+                   allow_upgrades=True, transports=['polling', 'websocket'],
+                   always_connect=True, logger=True, engineio_logger=True)
 
 # Spotify configuration
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID', '875cb1d855c64a6f90f3050f32ee8342')
@@ -90,6 +91,11 @@ def index():
 @app.route('/login')
 def login():
     """Initiate Spotify OAuth login"""
+    print("=== SPOTIFY LOGIN INITIATED ===")
+    print(f"Client ID: {SPOTIFY_CLIENT_ID}")
+    print(f"Client Secret: {SPOTIFY_CLIENT_SECRET[:10]}...")
+    print(f"Redirect URI: {SPOTIFY_REDIRECT_URI}")
+    
     sp_oauth = SpotifyOAuth(
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET,
@@ -97,13 +103,16 @@ def login():
         scope='user-read-playback-state user-modify-playback-state user-read-currently-playing'
     )
     auth_url = sp_oauth.get_authorize_url()
+    print(f"Generated auth URL: {auth_url}")
+    print("=== REDIRECTING TO SPOTIFY ===")
     return redirect(auth_url)
 
 @app.route('/callback')
 def callback():
     """Handle Spotify OAuth callback"""
-    print("Callback received!")
-    print("Request args:", request.args)
+    print("=== SPOTIFY CALLBACK RECEIVED ===")
+    print("Request args:", dict(request.args))
+    print("Request URL:", request.url)
     
     sp_oauth = SpotifyOAuth(
         client_id=SPOTIFY_CLIENT_ID,
@@ -113,26 +122,42 @@ def callback():
     )
 
     code = request.args.get('code')
+    error = request.args.get('error')
+    
     print(f"Authorization code: {code}")
+    print(f"Error (if any): {error}")
+    
+    if error:
+        print(f"=== SPOTIFY ERROR: {error} ===")
+        return f"Spotify authentication error: {error}", 400
     
     if not code:
+        print("=== NO AUTHORIZATION CODE ===")
         return "No authorization code received", 400
     
     try:
+        print("=== ATTEMPTING TO EXCHANGE CODE FOR TOKEN ===")
         token_info = sp_oauth.get_access_token(code)
         print(f"Token info received: {bool(token_info)}")
         
         if token_info:
+            print("=== TOKEN EXCHANGE SUCCESSFUL ===")
+            print(f"Access token: {token_info['access_token'][:20]}...")
+            print(f"Token type: {token_info.get('token_type', 'N/A')}")
+            print(f"Expires in: {token_info.get('expires_in', 'N/A')} seconds")
+            print(f"Scope: {token_info.get('scope', 'N/A')}")
+            
             session['spotify_token'] = token_info['access_token']
             session['user_id'] = str(uuid.uuid4())
             redirect_url = f'https://joiner.enpointe.io?token={token_info["access_token"]}'
-            print(f"Redirecting to: {redirect_url}")
+            print(f"=== REDIRECTING TO: {redirect_url} ===")
             return redirect(redirect_url)
         else:
-            print("Failed to get token info")
+            print("=== TOKEN EXCHANGE FAILED ===")
             return "Authentication failed", 400
     except Exception as e:
-        print(f"Error in callback: {e}")
+        print(f"=== TOKEN EXCHANGE ERROR: {e} ===")
+        print(f"Error type: {type(e).__name__}")
         print(f"Client ID: {SPOTIFY_CLIENT_ID}")
         print(f"Client Secret: {SPOTIFY_CLIENT_SECRET[:10]}...")
         print(f"Redirect URI: {SPOTIFY_REDIRECT_URI}")

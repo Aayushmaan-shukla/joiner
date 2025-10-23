@@ -170,11 +170,22 @@ class SpotifyCollabApp {
 
     initializeSpotifyPlayer() {
         const token = this.spotifyToken;
-        if (!token) return;
+        console.log('=== INITIALIZING SPOTIFY PLAYER ===');
+        console.log('Token available:', !!token);
+        console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'None');
+        
+        if (!token) {
+            console.log('=== NO TOKEN - CANNOT INITIALIZE PLAYER ===');
+            return;
+        }
 
+        console.log('=== CREATING SPOTIFY PLAYER ===');
         this.spotifyPlayer = new Spotify.Player({
             name: 'Spotify Collaborative Player',
-            getOAuthToken: cb => cb(token),
+            getOAuthToken: cb => {
+                console.log('=== PROVIDING TOKEN TO PLAYER ===');
+                cb(token);
+            },
             volume: 0.5
         });
 
@@ -218,8 +229,12 @@ class SpotifyCollabApp {
     }
 
     async getCurrentPlaybackState() {
-        if (!this.spotifyToken) return;
+        if (!this.spotifyToken) {
+            console.log('=== NO SPOTIFY TOKEN AVAILABLE ===');
+            return;
+        }
 
+        console.log('=== FETCHING CURRENT PLAYBACK STATE ===');
         try {
             const response = await fetch('https://api.spotify.com/v1/me/player', {
                 headers: {
@@ -227,21 +242,38 @@ class SpotifyCollabApp {
                 }
             });
 
+            console.log('=== SPOTIFY API RESPONSE ===');
+            console.log('Status:', response.status);
+            console.log('Status Text:', response.statusText);
+            console.log('Headers:', Object.fromEntries(response.headers.entries()));
+
             if (response.ok) {
                 const playbackState = await response.json();
-                console.log('Current playback state:', playbackState);
+                console.log('=== FULL PLAYBACK STATE ===');
+                console.log(JSON.stringify(playbackState, null, 2));
                 
                 if (playbackState && playbackState.item) {
-                    this.updateCurrentTrack({
+                    console.log('=== UPDATING CURRENT TRACK ===');
+                    const trackInfo = {
                         id: playbackState.item.id,
                         name: playbackState.item.name,
                         artists: playbackState.item.artists.map(artist => artist.name),
                         uri: playbackState.item.uri
-                    });
+                    };
+                    console.log('Track info:', trackInfo);
+                    this.updateCurrentTrack(trackInfo);
+                } else {
+                    console.log('=== NO TRACK PLAYING ===');
+                    this.updateCurrentTrack(null);
                 }
+            } else {
+                const errorText = await response.text();
+                console.log('=== SPOTIFY API ERROR ===');
+                console.log('Error response:', errorText);
             }
         } catch (error) {
-            console.error('Error getting current playback state:', error);
+            console.error('=== ERROR GETTING PLAYBACK STATE ===');
+            console.error('Error:', error);
         }
     }
 
@@ -604,23 +636,42 @@ class SpotifyCollabApp {
     }
 
     handlePlayerStateChange(state) {
+        console.log('=== PLAYER STATE CHANGED ===');
+        console.log('Full state:', JSON.stringify(state, null, 2));
+        
         if (state && state.track_window && state.track_window.current_track) {
             const track = state.track_window.current_track;
-            this.updateCurrentTrack({
+            console.log('=== TRACK DETECTED ===');
+            console.log('Track details:', track);
+            
+            const trackInfo = {
                 id: track.id,
                 name: track.name,
                 artists: track.artists.map(artist => artist.name),
                 uri: track.uri
-            });
+            };
+            console.log('Processed track info:', trackInfo);
+            this.updateCurrentTrack(trackInfo);
+        } else {
+            console.log('=== NO TRACK IN STATE ===');
+            this.updateCurrentTrack(null);
         }
     }
 
     updateCurrentTrack(track) {
+        console.log('=== UPDATING CURRENT TRACK DISPLAY ===');
+        console.log('Track data:', track);
+        
         if (!track || !track.name) {
+            console.log('=== NO TRACK - SHOWING PLACEHOLDER ===');
             this.currentTrackInfo.innerHTML = '<div class="track-placeholder">No track playing</div>';
             return;
         }
 
+        console.log('=== DISPLAYING TRACK ===');
+        console.log('Track name:', track.name);
+        console.log('Track artists:', track.artists);
+        
         this.currentTrackInfo.innerHTML = `
             <div class="track-details">
                 <div class="track-cover">🎵</div>
@@ -630,6 +681,7 @@ class SpotifyCollabApp {
                 </div>
             </div>
         `;
+        console.log('=== TRACK DISPLAY UPDATED ===');
     }
 
     generateShareLink(roomId) {
