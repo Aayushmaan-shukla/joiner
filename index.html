@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Collaborative Music</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Spotify Collaborative Music</h1>
+
+        <!-- Authentication Section -->
+        <div id="auth-section" class="section">
+            <h2>Login to Spotify</h2>
+            <button id="login-btn" class="btn">Login with Spotify</button>
+        </div>
+
+        <!-- Room Creation/Joining Section -->
+        <div id="room-section" class="section hidden">
+            <div class="room-actions">
+                <div class="action-card">
+                    <h3>Create Room</h3>
+                    <p>Start a new collaborative session</p>
+                    <input type="text" id="user-name" placeholder="Enter your name" value="Host">
+                    <button id="create-room-btn" class="btn">Create Room</button>
+                </div>
+
+                <div class="action-card">
+                    <h3>Join Room</h3>
+                    <p>Join an existing session</p>
+                    <input type="text" id="join-room-id" placeholder="Enter room ID">
+                    <input type="text" id="join-user-name" placeholder="Enter your name" value="Joiner">
+                    <button id="join-room-btn" class="btn">Join Room</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Room Interface -->
+        <div id="room-interface" class="section hidden">
+            <div class="room-header">
+                <h2>Room: <span id="room-id-display"></span></h2>
+                <div class="room-info">
+                    <span id="user-role" class="badge"></span>
+                    <button id="leave-room-btn" class="btn secondary">Leave Room</button>
+                </div>
+            </div>
+
+            <!-- Host Controls -->
+            <div id="host-controls" class="controls-section hidden">
+                <h3>Host Controls</h3>
+                <div class="control-buttons">
+                    <button id="sync-btn" class="btn">🔄 Sync All</button>
+                    <button id="transfer-host-btn" class="btn secondary">👑 Transfer Host</button>
+                </div>
+            </div>
+
+            <!-- Current Track Display -->
+            <div id="current-track-section" class="section">
+                <h3>Now Playing</h3>
+                <div id="current-track" class="track-info">
+                    <div class="track-placeholder">No track playing</div>
+                </div>
+            </div>
+
+            <!-- Playback Controls -->
+            <div id="playback-controls" class="controls-section hidden">
+                <h3>Playback Controls</h3>
+                <div class="playback-buttons">
+                    <button id="play-btn" class="btn">▶️ Play</button>
+                    <button id="pause-btn" class="btn">⏸️ Pause</button>
+                </div>
+            </div>
+
+            <!-- Sync Status -->
+            <div id="sync-status" class="section hidden">
+                <h3>Sync Status</h3>
+                <div id="sync-info">
+                    <p id="sync-message"></p>
+                    <button id="ready-btn" class="btn">✅ Ready</button>
+                </div>
+            </div>
+
+            <!-- Participants List -->
+            <div id="participants-section" class="section">
+                <h3>Participants</h3>
+                <div id="participants-list" class="participants">
+                    <!-- Participants will be listed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Link -->
+        <div id="share-section" class="section hidden">
+            <h3>Share this link with friends:</h3>
+            <div class="share-link">
+                <input type="text" id="share-link-input" readonly>
+                <button id="copy-link-btn" class="btn">📋 Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
