@@ -18,7 +18,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', 
                    ping_timeout=60, ping_interval=25, max_http_buffer_size=1000000,
-                   allow_upgrades=True, transports=['polling', 'websocket'],
+                   allow_upgrades=False, transports=['polling'],
                    always_connect=True, logger=True, engineio_logger=True)
 
 # Spotify configuration
@@ -137,19 +137,37 @@ def callback():
     
     try:
         print("=== ATTEMPTING TO EXCHANGE CODE FOR TOKEN ===")
-        token_info = sp_oauth.get_access_token(code)
+        # Use get_cached_token to avoid deprecation warning
+        token_info = sp_oauth.get_cached_token()
+        if not token_info:
+            token_info = sp_oauth.get_access_token(code, as_dict=False)
+            if isinstance(token_info, str):
+                # Convert string token to dict format
+                token_info = {
+                    'access_token': token_info,
+                    'token_type': 'Bearer',
+                    'expires_in': 3600,
+                    'scope': 'user-read-playback-state user-modify-playback-state user-read-currently-playing'
+                }
+        
         print(f"Token info received: {bool(token_info)}")
         
         if token_info:
             print("=== TOKEN EXCHANGE SUCCESSFUL ===")
-            print(f"Access token: {token_info['access_token'][:20]}...")
-            print(f"Token type: {token_info.get('token_type', 'N/A')}")
-            print(f"Expires in: {token_info.get('expires_in', 'N/A')} seconds")
-            print(f"Scope: {token_info.get('scope', 'N/A')}")
-            
-            session['spotify_token'] = token_info['access_token']
+            if isinstance(token_info, dict):
+                print(f"Access token: {token_info['access_token'][:20]}...")
+                print(f"Token type: {token_info.get('token_type', 'N/A')}")
+                print(f"Expires in: {token_info.get('expires_in', 'N/A')} seconds")
+                print(f"Scope: {token_info.get('scope', 'N/A')}")
+                
+                access_token = token_info['access_token']
+            else:
+                print(f"Access token: {token_info[:20]}...")
+                access_token = token_info
+                
+            session['spotify_token'] = access_token
             session['user_id'] = str(uuid.uuid4())
-            redirect_url = f'https://joiner.enpointe.io?token={token_info["access_token"]}'
+            redirect_url = f'https://joiner.enpointe.io?token={access_token}'
             print(f"=== REDIRECTING TO: {redirect_url} ===")
             return redirect(redirect_url)
         else:
@@ -161,6 +179,12 @@ def callback():
         print(f"Client ID: {SPOTIFY_CLIENT_ID}")
         print(f"Client Secret: {SPOTIFY_CLIENT_SECRET[:10]}...")
         print(f"Redirect URI: {SPOTIFY_REDIRECT_URI}")
+        print("=== CHECK SPOTIFY APP SETTINGS ===")
+        print("1. Go to https://developer.spotify.com/dashboard")
+        print("2. Find your app with Client ID: 875cb1d855c64a6f90f3050f32ee8342")
+        print("3. Click 'Edit Settings'")
+        print("4. Add Redirect URI: https://joiner.enpointe.io/callback")
+        print("5. Save settings")
         return f"Authentication error: {str(e)}", 400
 
 @app.route('/api/rooms', methods=['POST'])

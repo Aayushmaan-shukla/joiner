@@ -2,9 +2,8 @@
 class SpotifyCollabApp {
     constructor() {
         this.socket = io('https://joiner.enpointe.io', {
-            transports: ['websocket', 'polling'],
-            upgrade: true,
-            rememberUpgrade: true,
+            transports: ['polling'],
+            upgrade: false,
             timeout: 20000,
             forceNew: false,
             reconnection: true,
