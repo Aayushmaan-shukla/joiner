@@ -21,7 +21,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 # Spotify configuration
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID', '81417b679d8f4ed3803560e46b9ce629')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET', 'acda24b80f3649158dbf55e1fc085a4a')
-SPOTIFY_REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI', 'http://localhost:5000/callback')
+SPOTIFY_REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI', 'https://joiner.enpointe.io/callback')
 
 # Check if Spotify credentials are set
 if SPOTIFY_CLIENT_ID == 'your_spotify_client_id_here' or SPOTIFY_CLIENT_SECRET == 'your_spotify_client_secret_here':
