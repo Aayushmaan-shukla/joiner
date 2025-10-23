@@ -177,6 +177,12 @@ class SpotifyCollabApp {
             if (response.ok) {
                 this.currentRoom = data.room;
                 this.isHost = true;
+                
+                // Persist room state to localStorage
+                localStorage.setItem('currentRoomId', data.room_id);
+                localStorage.setItem('currentRoomData', JSON.stringify(data.room));
+                localStorage.setItem('userRole', 'host');
+                
                 this.showRoomInterface();
                 this.socket.emit('join_room', { room_id: data.room_id });
                 this.generateShareLink(data.room_id);
@@ -216,6 +222,12 @@ class SpotifyCollabApp {
             if (response.ok) {
                 this.currentRoom = data.room;
                 this.isHost = false;
+                
+                // Persist room state to localStorage
+                localStorage.setItem('currentRoomId', roomId);
+                localStorage.setItem('currentRoomData', JSON.stringify(data.room));
+                localStorage.setItem('userRole', 'joiner');
+                
                 this.showRoomInterface();
                 this.socket.emit('join_room', { room_id: roomId });
                 this.generateShareLink(roomId);
@@ -243,6 +255,12 @@ class SpotifyCollabApp {
             });
 
             this.socket.emit('leave_room', { room_id: this.currentRoom.room_id });
+            
+            // Clear persisted room state
+            localStorage.removeItem('currentRoomId');
+            localStorage.removeItem('currentRoomData');
+            localStorage.removeItem('userRole');
+            
             this.resetToRoomSelection();
         } catch (error) {
             console.error('Leave room error:', error);
@@ -405,6 +423,11 @@ class SpotifyCollabApp {
     handleHostTransfer(data) {
         this.isHost = (data.new_host_id === this.userId);
         this.currentRoom = data.room;
+        
+        // Update stored role
+        localStorage.setItem('userRole', this.isHost ? 'host' : 'joiner');
+        localStorage.setItem('currentRoomData', JSON.stringify(data.room));
+        
         this.updateUserRole();
         this.updateParticipants(data.room);
 
@@ -467,6 +490,12 @@ class SpotifyCollabApp {
 
     handleRoomDeleted() {
         alert('Room has been deleted');
+        
+        // Clear persisted room state
+        localStorage.removeItem('currentRoomId');
+        localStorage.removeItem('currentRoomData');
+        localStorage.removeItem('userRole');
+        
         this.resetToRoomSelection();
     }
 
@@ -518,31 +547,86 @@ class SpotifyCollabApp {
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for Spotify token in URL parameters
+    // Check for Spotify token in URL parameters or localStorage
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const roomId = urlParams.get('room');
+    const tokenFromUrl = urlParams.get('token');
+    const roomIdFromUrl = urlParams.get('room');
+    
+    // Check localStorage for persisted state
+    const storedToken = localStorage.getItem('spotifyToken');
+    const storedRoomId = localStorage.getItem('currentRoomId');
+    const storedRoomData = localStorage.getItem('currentRoomData');
+    const storedUserRole = localStorage.getItem('userRole');
 
     console.log('URL params:', window.location.search);
-    console.log('Token found:', token);
-    console.log('Room ID found:', roomId);
+    console.log('Token from URL:', tokenFromUrl);
+    console.log('Token from localStorage:', storedToken);
+    console.log('Room ID from URL:', roomIdFromUrl);
+    console.log('Room ID from localStorage:', storedRoomId);
+
+    // Use token from URL if available, otherwise use stored token
+    const token = tokenFromUrl || storedToken;
+    const roomId = roomIdFromUrl || storedRoomId;
 
     if (token) {
-        console.log('Token detected, hiding auth section and showing room section');
-        // Hide auth section and show room section
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('room-section').classList.remove('hidden');
+        console.log('Token detected, initializing app');
+        
+        // Store token in localStorage for persistence
+        if (tokenFromUrl) {
+            localStorage.setItem('spotifyToken', token);
+        }
 
         // Initialize app with token
         window.spotifyApp = new SpotifyCollabApp();
         window.spotifyApp.spotifyToken = token;
 
-        // If room ID is provided, try to join automatically
-        if (roomId) {
+        // Check if we need to restore room state
+        if (storedRoomData && storedRoomId) {
+            console.log('Restoring room state from localStorage');
+            try {
+                const roomData = JSON.parse(storedRoomData);
+                window.spotifyApp.currentRoom = roomData;
+                window.spotifyApp.isHost = storedUserRole === 'host';
+                
+                // Show room interface
+                window.spotifyApp.showRoomInterface();
+                
+                // Reconnect to room via socket
+                window.spotifyApp.socket.emit('join_room', { room_id: storedRoomId });
+                
+                // Update participants
+                window.spotifyApp.updateParticipants(roomData);
+                
+                console.log('Room state restored successfully');
+            } catch (error) {
+                console.error('Error restoring room state:', error);
+                // Clear invalid stored data
+                localStorage.removeItem('currentRoomData');
+                localStorage.removeItem('currentRoomId');
+                localStorage.removeItem('userRole');
+                
+                // Show room section for new room creation/joining
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('room-section').classList.remove('hidden');
+            }
+        } else if (roomId) {
+            // If room ID is provided in URL, try to join automatically
             window.spotifyApp.joinRoomIdInput.value = roomId;
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('room-section').classList.remove('hidden');
+        } else {
+            // Show room section for new room creation/joining
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('room-section').classList.remove('hidden');
         }
     } else {
         console.log('No token found, showing auth section');
+        // Clear any stored data if no token
+        localStorage.removeItem('spotifyToken');
+        localStorage.removeItem('currentRoomData');
+        localStorage.removeItem('currentRoomId');
+        localStorage.removeItem('userRole');
+        
         // Show auth section
         document.getElementById('auth-section').classList.remove('hidden');
         window.spotifyApp = new SpotifyCollabApp();
