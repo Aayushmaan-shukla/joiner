@@ -180,15 +180,69 @@ class SpotifyCollabApp {
 
         // Player event listeners
         this.spotifyPlayer.addListener('ready', ({ device_id }) => {
-            console.log('Spotify player ready');
+            console.log('Spotify player ready with device ID:', device_id);
             this.deviceId = device_id;
+            this.isReady = true;
+            
+            // Get current playback state immediately
+            this.getCurrentPlaybackState();
         });
 
         this.spotifyPlayer.addListener('player_state_changed', (state) => {
+            console.log('Player state changed:', state);
             this.handlePlayerStateChange(state);
         });
 
+        this.spotifyPlayer.addListener('initialization_error', ({ message }) => {
+            console.error('Failed to initialize Spotify player:', message);
+        });
+
+        this.spotifyPlayer.addListener('authentication_error', ({ message }) => {
+            console.error('Failed to authenticate with Spotify:', message);
+        });
+
+        this.spotifyPlayer.addListener('account_error', ({ message }) => {
+            console.error('Failed to validate Spotify account:', message);
+        });
+
+        this.spotifyPlayer.addListener('playback_error', ({ message }) => {
+            console.error('Failed to perform playback:', message);
+        });
+
         this.spotifyPlayer.connect();
+        
+        // Set up periodic playback state checking
+        this.playbackCheckInterval = setInterval(() => {
+            this.getCurrentPlaybackState();
+        }, 5000); // Check every 5 seconds
+    }
+
+    async getCurrentPlaybackState() {
+        if (!this.spotifyToken) return;
+
+        try {
+            const response = await fetch('https://api.spotify.com/v1/me/player', {
+                headers: {
+                    'Authorization': `Bearer ${this.spotifyToken}`
+                }
+            });
+
+            if (response.ok) {
+                const playbackState = await response.json();
+                console.log('Current playback state:', playbackState);
+                
+                if (playbackState && playbackState.item) {
+                    this.updateCurrentTrack({
+                        id: playbackState.item.id,
+                        name: playbackState.item.name,
+                        artists: playbackState.item.artists.map(artist => artist.name),
+                        uri: playbackState.item.uri
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error getting current playback state:', error);
+        }
     }
 
     async loginToSpotify() {
@@ -435,6 +489,12 @@ class SpotifyCollabApp {
         this.currentRoom = null;
         this.isHost = false;
         this.isReady = false;
+        
+        // Clean up playback checking interval
+        if (this.playbackCheckInterval) {
+            clearInterval(this.playbackCheckInterval);
+            this.playbackCheckInterval = null;
+        }
     }
 
     updateUserRole() {

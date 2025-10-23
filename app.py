@@ -17,7 +17,8 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', 
-                   ping_timeout=60, ping_interval=25, max_http_buffer_size=1000000)
+                   ping_timeout=60, ping_interval=25, max_http_buffer_size=1000000,
+                   allow_upgrades=True, transports=['websocket', 'polling'])
 
 # Spotify configuration
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID', '875cb1d855c64a6f90f3050f32ee8342')
@@ -132,6 +133,9 @@ def callback():
             return "Authentication failed", 400
     except Exception as e:
         print(f"Error in callback: {e}")
+        print(f"Client ID: {SPOTIFY_CLIENT_ID}")
+        print(f"Client Secret: {SPOTIFY_CLIENT_SECRET[:10]}...")
+        print(f"Redirect URI: {SPOTIFY_REDIRECT_URI}")
         return f"Authentication error: {str(e)}", 400
 
 @app.route('/api/rooms', methods=['POST'])
